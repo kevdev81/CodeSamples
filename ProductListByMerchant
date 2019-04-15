@@ -1,0 +1,172 @@
+import React from "react";
+import * as productsByRoleSvc from "../../../services/products/productPaginatedByRoleService";
+import ProductList from "./ProductList";
+import MerchantProductColumns from "././productListColumns/MerchantProductColumns";
+import Rating from "react-rating";
+import PropTypes from "prop-types";
+import { withRouter } from "react-router-dom";
+import logger from "../../../logger";
+
+const _logger = logger.extend("ProductsByMerchantList");
+
+class ProductsByMerchantList extends React.Component {
+  state = {
+    pageIndex: 0,
+    pageSize: 1,
+    mappedProducts: [],
+    totalPages: 0,
+    prevPageButtonStatus: true,
+    nextPageButtonStatus: true
+  };
+
+  componentDidMount() {
+    this.loadCurrentPage();
+  }
+
+  loadCurrentPage = () => {
+    productsByRoleSvc
+      .handleGetProductsForMerchant(this.state.pageIndex, this.state.pageSize)
+      .then(this.onGetAllSuccess)
+      .catch(this.onGetAllError);
+  };
+  onGetAllSuccess = data => {
+    this.mapMerchantProducts(data);
+    this.setState({ totalPages: data.totalPages });
+    _logger("Successfully retrieved product data.");
+  };
+  onGetAllError = error => {
+    _logger(error);
+    this.setState({ mappedProducts: null });
+    _logger("An error occured when retrieving product data.");
+  };
+
+  mapMerchantProducts = products => {
+    const mappedProducts = products.pagedItems.map(this.mapProduct);
+    this.setState({ mappedProducts });
+  };
+  pushToProducts = () => {
+    this.props.history.push("/merchants/products");
+  };
+
+  pushToSingleProduct = productId => {
+    this.props.history.push(`/products/details/${productId}`);
+  };
+
+  mapProduct = product => {
+    return (
+      <div key={product.id}>
+        <div width="100%" height="100%" className="row">
+          <span width="100%" height="100%" className="col-sm-7">
+            <img
+              width="90%"
+              height="auto"
+              align="center"
+              src={product.mainImage}
+              alt="Product"
+              style={{ borderRadius: "20%" }}
+            />
+          </span>
+          <span width="100%" height="100%" align="center" className="col-sm-5">
+            <h3>
+              <a
+                href=""
+                onClick={e => {
+                  e.preventDefault();
+                  this.pushToSingleProduct(product.id);
+                }}
+              >
+                {product.title}
+              </a>
+            </h3>
+            <Rating
+              initialRating={product.averageRating / 2}
+              readonly
+              emptySymbol="far fa-star"
+              fullSymbol="fas fa-star"
+            />
+            <h4>({product.totalReviews})</h4>
+          </span>
+        </div>
+        <hr />
+      </div>
+    );
+  };
+
+  prevPage = () => {
+    this.toggleButton();
+    if (this.state.mappedProducts === null) {
+      this.toggleButton();
+      return null;
+    } else if (this.state.pageIndex !== 0) {
+      this.setState(prevState => {
+        const pageIndex = prevState.pageIndex - 1;
+        productsByRoleSvc
+          .handleGetProductsForMerchant(
+            prevState.pageIndex - 1,
+            this.state.pageSize
+          )
+          .then(this.onGetAllSuccess)
+          .catch(this.onGetAllError)
+          .then(this.toggleButton);
+        return { pageIndex };
+      });
+    } else if (this.state.pageIndex === 0) {
+      this.toggleButton();
+    }
+  };
+
+  nextPage = () => {
+    this.toggleButton();
+    if (this.state.mappedProducts === null) {
+      this.toggleButton();
+      return null;
+    } else if (this.state.pageIndex + 1 !== this.state.totalPages) {
+      this.setState(prevState => {
+        const pageIndex = prevState.pageIndex + 1;
+        productsByRoleSvc
+          .handleGetProductsForMerchant(
+            prevState.pageIndex + 1,
+            this.state.pageSize
+          )
+          .then(this.onGetAllSuccess)
+          .catch(this.onGetAllError)
+          .then(this.toggleButton);
+        return { pageIndex };
+      });
+    } else if (this.state.pageIndex + 1 === this.state.totalPages) {
+      this.toggleButton();
+    }
+  };
+
+  toggleButton = () => {
+    this.setState(prevState => {
+      const prevPageButtonStatus = !prevState.prevPageButtonStatus;
+      const nextPageButtonStatus = !prevState.nextPageButtonStatus;
+      return { prevPageButtonStatus, nextPageButtonStatus };
+    });
+  };
+
+  render() {
+    return (
+      <div className="col-lg-3">
+        <ProductList
+          productListColumns={<MerchantProductColumns />}
+          prevPage={this.prevPage}
+          nextPage={this.nextPage}
+          prevPageButtonStatus={this.state.prevPageButtonStatus}
+          nextPageButtonStatus={this.state.nextPageButtonStatus}
+          mappedProducts={this.state.mappedProducts}
+          pageIndex={this.state.pageIndex}
+          pageSize={this.state.pageSize}
+          pushToProducts={this.pushToProducts}
+        />
+      </div>
+    );
+  }
+}
+
+ProductsByMerchantList.propTypes = {
+  history: PropTypes.object
+};
+
+export default withRouter(ProductsByMerchantList);
