@@ -1,0 +1,68 @@
+import React from "react";
+import PropTypes from "prop-types";
+import AddressUpdateModal from "./AddressUpdateModal";
+
+const AddressMapper = ({
+  addressItem,
+  prevAddressInfo,
+  setUpdatedAddressList,
+  deleteAddress
+}) => {
+  return (
+    <div>
+      <div className="row">
+        <span align="center" className="col-md-1">
+          {addressItem.name}
+        </span>
+        <span align="center" className="col-md-2">
+          {addressItem.lineOne}
+        </span>
+        <span className="col-md-1">{addressItem.lineTwo}</span>
+        <span className="col-md-1">{addressItem.city}</span>
+        <span align="center" className="col-md-1">
+          {addressItem.zip}
+        </span>
+        <span align="center" className="col-md-1">
+          {addressItem.stateId}
+        </span>
+        <span align="center" className="col-md-1">
+          {addressItem.countryId}
+        </span>
+        <span align="center" className="col-md-1">
+          {addressItem.isBilling.toString()}
+        </span>
+        <span align="center" className="col-md-1">
+          {addressItem.isProduct.toString()}
+        </span>
+        <span className="col-md-1" align="center">
+          <AddressUpdateModal
+            key={addressItem.id}
+            address={addressItem}
+            prevAddressInfo={prevAddressInfo}
+            setUpdatedAddressList={setUpdatedAddressList}
+          />
+        </span>
+        <span className="col-md-1" align="center">
+          <button
+            className="btn btn-inverse waves-effect waves-light"
+            onClick={() => deleteAddress(addressItem.id)}
+          >
+            &times;
+          </button>
+        </span>
+      </div>
+      <hr />
+    </div>
+  );
+};
+
+AddressMapper.propTypes = {
+  addressItem: PropTypes.object,
+  prevAddressInfo: PropTypes.array,
+  setUpdatedAddressList: PropTypes.func,
+  deleteAddress: PropTypes.func,
+  onDeleteSuccess: PropTypes.func,
+  onDeleteFail: PropTypes.func
+};
+
+export default AddressMapper;
