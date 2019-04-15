@@ -1,0 +1,46 @@
+import * as Yup from "yup";
+
+export const addressSchema = Yup.object().shape({
+  name: Yup.string()
+    .min(2, "Minimum 2 characters")
+    .max(400, "Exceeds maximum amount of characters")
+    .required("Required"),
+  lineOne: Yup.string()
+    .min(4, "Minimum 4 characters")
+    .max(255, "Exceeds maximum amount of characters")
+    .required("Required"),
+  linetwo: Yup.string()
+    .min(4, "Minimum 4 characters")
+    .max(255, "Exceeds maximum amount of characters")
+    .notRequired(),
+  city: Yup.string()
+    .min(4, "Minimum 4 characters")
+    .max(255, "Exceeds maximum amount of characters")
+    .required("Required"),
+  zip: Yup.string()
+    .min(5, "Please enter a valid ZipCode")
+    .max(10, 'Ex. "12345" or "12345-5678"')
+    .required("Required"),
+  stateId: Yup.string().notRequired(),
+  countryId: Yup.string()
+    .max(900)
+    .required("Required"),
+  isBilling: Yup.string()
+    .min(1)
+    .required("Required"),
+  isProduct: Yup.string()
+    .min(1)
+    .required("Required")
+});
+
+export const initialAddressValues = {
+  name: "",
+  lineOne: "",
+  lineTwo: "",
+  city: "",
+  zip: "",
+  stateId: "",
+  countryId: "",
+  isBilling: "",
+  isProduct: ""
+};
