@@ -1,0 +1,120 @@
+using Project.Data;
+using Project.Data.Providers;
+using Project.Models;
+using Project.Models.Domain;
+using Project.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Text;
+
+namespace Project.Services
+{
+    public class ProductByRoleServices :IProductByRoleService
+    {
+        private readonly IDataProvider _dataProvider;
+
+        public ProductByRoleServices(IDataProvider dataProvider)
+        {
+            _dataProvider = dataProvider;
+        }
+
+        public Paged<ProductListForMerchant> GetProductsForMerchant(int currentUserId, int pageIndex, int pageSize)
+        {
+            Paged<ProductListForMerchant> result = null;
+            List<ProductListForMerchant> list = null;
+            int totalCount = 0;
+
+            _dataProvider.ExecuteCmd(
+                "dbo.Products_SelectPaginatedForMerchant",
+                (paramCol) =>
+                {
+                    paramCol.AddWithValue("@UserId", currentUserId);
+                    paramCol.AddWithValue("@PageIndex", pageIndex);
+                    paramCol.AddWithValue("@PageSize", pageSize);
+                },
+                (reader, set) =>
+                {
+                    if (list == null)
+                    {
+                        list = new List<ProductListForMerchant>();
+                    }
+                    ProductListForMerchant product = Mapper(reader);
+                    list.Add(product);
+
+                    if (list.Count == 1)
+                    {
+                        totalCount = product.TotalCount;
+                    }
+                });
+
+            result = new Paged<ProductListForMerchant>(list, pageIndex, pageSize, totalCount);
+
+            return result;
+        }
+
+        public Paged<ProductListForInfluencer> GetProductsForInfluencer(int currentUserId, int pageIndex, int pageSize)
+        {
+            Paged<ProductListForInfluencer> result = null;
+            List<ProductListForInfluencer> list = null;
+            int totalCount = 0;
+
+            _dataProvider.ExecuteCmd(
+                "dbo.Products_SelectPaginatedForInfluencer",
+                (paramCol) =>
+                {
+                    paramCol.AddWithValue("@UserId", currentUserId);
+                    paramCol.AddWithValue("@PageIndex", pageIndex);
+                    paramCol.AddWithValue("@PageSize", pageSize);
+                },
+                (reader, set) =>
+                {
+                    if (list == null)
+                    {
+                        list = new List<ProductListForInfluencer>();
+                    }
+                    ProductListForInfluencer product = InfluencerMapper(reader);
+                    list.Add(product);
+
+                    if (list.Count == 1)
+                    {
+                        totalCount = product.TotalCount;
+                    }
+                });
+
+            result = new Paged<ProductListForInfluencer>(list, pageIndex, pageSize, totalCount);
+
+            return result;
+        }
+
+        private static ProductListForMerchant Mapper(IDataReader reader)
+        {
+            ProductListForMerchant product = new ProductListForMerchant();
+            int startingIndex = 0;
+
+            product.Id = reader.GetSafeInt32(startingIndex++);
+            product.Title = reader.GetSafeString(startingIndex++);
+            product.MainImage = reader.GetSafeString(startingIndex++);
+            product.TotalCount = reader.GetSafeInt32(startingIndex++);
+            product.AverageRating = reader.GetSafeDouble(startingIndex++);
+            product.TotalReviews = reader.GetSafeInt32(startingIndex++);
+            return product;
+        }
+
+        private static ProductListForInfluencer InfluencerMapper(IDataReader reader)
+        {
+            ProductListForInfluencer product = new ProductListForInfluencer();
+            int startingIndex = 0;
+
+            product.Id = reader.GetSafeInt32(startingIndex++);
+            product.Title = reader.GetSafeString(startingIndex++);
+            product.Name = reader.GetSafeString(startingIndex++);
+            product.DateStart = reader.GetSafeDateTime(startingIndex++);
+            product.DateEnd = reader.GetSafeDateTime(startingIndex++);
+            product.MainImage = reader.GetSafeString(startingIndex++);
+            product.TotalCount = reader.GetSafeInt32(startingIndex++);
+
+            return product;
+        }
+    }
+}
