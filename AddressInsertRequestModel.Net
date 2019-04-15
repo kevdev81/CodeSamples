@@ -1,0 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Text;
+
+namespace Project.Models.Requests
+{
+    public class AddressInsertRequest
+    {
+        [Required, MinLength(2), MaxLength(400)]
+        public string Name { get; set; }
+
+        [Required, MinLength(4), MaxLength(255)]
+        public string LineOne { get; set; }
+
+        public string LineTwo { get; set; }
+
+        [Required, MinLength(4), MaxLength(255)]
+        public string City { get; set; }
+
+        [Required, MinLength(5), MaxLength(10)]
+        public string Zip { get; set; }
+
+        public int StateId { get; set; }
+
+        [Required, Range(0, 900)]
+        public int CountryId { get; set; }
+
+        [Required]
+        public bool? IsBilling { get; set; }
+
+        [Required]
+        public bool? IsProduct { get; set; }
+
+        
+        public bool? IsMerchant { get; set; }
+    }
+}
