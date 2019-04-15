@@ -1,0 +1,48 @@
+import React from "react";
+import logger from "../../logger";
+import PropTypes from "prop-types";
+import * as addressSvc from "../../services/addressService";
+
+const _logger = logger.extend("AddressDelete");
+
+class AddressDelete extends React.Component {
+  deleteAddress = addressId => {
+    addressSvc
+      .handleDelete(addressId)
+      .then(onDeleteSuccess)
+      .catch(onDeleteFail);
+  };
+  onDeleteSuccess = id => {
+    this.setState(prevState => {
+      const index = prevState.addressList.findIndex(
+        address => address.id === id
+      );
+      const newAddressArr1 = prevState.addressList.slice(0, index);
+      const newAddressArr2 = prevState.addressList.slice(index + 1);
+      const addressList = newAddressArr1.concat(newAddressArr2);
+      const addressComponents = this.mapAddressList(addressList);
+      return { addressComponents, addressList };
+    });
+    this.state.setSweetAlert();
+    _logger("Address has been deleted.", id);
+  };
+  onDeleteFail = error => {
+    _logger("There was an unexpected error with your request.", error);
+  };
+  render() {
+    return (
+      <button
+        className="btn btn-inverse waves-effect waves-light"
+        onClick={() => deleteAddress(this.props.addressItemId)}
+      >
+        &times;
+      </button>
+    );
+  }
+}
+
+AddressDelete.propTypes = {
+  addressItemId: PropTypes.number
+};
+
+export default AddressDelete;
