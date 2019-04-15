@@ -1,0 +1,165 @@
+using Project.Data;
+using Project.Data.Providers;
+using Project.Models.Domain;
+using Project.Models.Requests;
+using Project.Services;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Text;
+
+namespace Project.Services
+{
+    public class AddressServices : IAddressService
+    {
+        private readonly IDataProvider _dataProvider;
+
+        public AddressServices(IDataProvider dataProvider)
+        {
+            _dataProvider = dataProvider;
+        }
+
+        public List<Address> Get()
+        {
+            List<Address> result = null;
+            _dataProvider.ExecuteCmd(
+                "dbo.Addresses_SelectAll",
+                inputParamMapper: null,
+                singleRecordMapper: delegate (IDataReader reader, short set)
+                {
+                    if (result == null)
+                    {
+                        result = new List<Address>();
+                    }
+
+                    Address address = MapAddress(reader);
+
+                    result.Add(address);
+                }
+                );
+            return result;
+        }
+
+        public Address Get(int id)
+        {
+            Address address = null;
+            _dataProvider.ExecuteCmd(
+                "dbo.Addresses_SelectById",
+                inputParamMapper: delegate (SqlParameterCollection paramCol)
+                {
+                    paramCol.AddWithValue("@Id", id);
+                },
+                singleRecordMapper: delegate (IDataReader reader, short set)
+                {
+                    address = MapAddress(reader);
+                }
+                );
+            return address;
+        }
+
+        public Address GetByUserId(int userId)
+        {
+            Address address = null;
+            _dataProvider.ExecuteCmd(
+                "dbo.Addresses_SelectByUserId",
+                inputParamMapper: delegate (SqlParameterCollection paramCol)
+                {
+                    paramCol.AddWithValue("@UserId", userId);
+                },
+                singleRecordMapper: delegate (IDataReader reader, short set)
+                {
+                    address = MapAddress(reader);
+                }
+                );
+            return address;
+        }
+
+        public int Create(AddressInsertRequest address, int userId)
+        {
+            int id = 0;
+            _dataProvider.ExecuteNonQuery(
+                "dbo.Addresses_Insert",
+                inputParamMapper: delegate (SqlParameterCollection paramCol)
+                {
+                    SqlParameter param = new SqlParameter();
+                    param.ParameterName = "@Id";
+                    param.SqlDbType = System.Data.SqlDbType.Int;
+                    param.Direction = System.Data.ParameterDirection.Output;
+                    paramCol.Add(param);
+
+                    paramCol.AddWithValue("@UserId", userId);
+                    paramCol.AddWithValue("@Name", address.Name);
+                    paramCol.AddWithValue("@LineOne", address.LineOne);
+                    paramCol.AddWithValue("@LineTwo", address.LineTwo);
+                    paramCol.AddWithValue("@City", address.City);
+                    paramCol.AddWithValue("@Zip", address.Zip);
+                    paramCol.AddWithValue("@StateId", address.StateId);
+                    paramCol.AddWithValue("@CountryId", address.CountryId);
+                    paramCol.AddWithValue("@isBilling", address.IsBilling.Value);
+                    paramCol.AddWithValue("@isProduct", address.IsProduct.Value);
+                    paramCol.AddWithValue("@isMerchant", 0);
+                },
+                returnParameters: delegate (SqlParameterCollection paramCol)
+                {
+                    Int32.TryParse(paramCol["@Id"].Value.ToString(), out id);
+                }
+            );
+            return id;
+        }
+
+        public void Update(AddressUpdateRequest address)
+        {
+            _dataProvider.ExecuteNonQuery(
+                "dbo.Addresses_Update",
+                inputParamMapper: delegate (SqlParameterCollection paramCol)
+                {
+                    paramCol.AddWithValue("@Id", address.Id);
+                    paramCol.AddWithValue("@Name", address.Name);
+                    paramCol.AddWithValue("@LineOne", address.LineOne);
+                    paramCol.AddWithValue("@LineTwo", address.LineTwo);
+                    paramCol.AddWithValue("@City", address.City);
+                    paramCol.AddWithValue("@Zip", address.Zip);
+                    paramCol.AddWithValue("@StateId", address.StateId);
+                    paramCol.AddWithValue("@CountryId", address.CountryId);
+                    paramCol.AddWithValue("@isBilling", address.IsBilling);
+                    paramCol.AddWithValue("@isProduct", address.IsProduct);
+                    paramCol.AddWithValue("@isMerchant", 0);
+                }
+            );
+        }
+
+        public void Delete(int id)
+        {
+            _dataProvider.ExecuteNonQuery(
+                "dbo.Addresses_Delete",
+                inputParamMapper: delegate (SqlParameterCollection paramCol)
+                {
+                    paramCol.AddWithValue("@Id", id);
+                }
+            );
+        }
+
+        private static Address MapAddress(IDataReader reader)
+        {
+            Address address = new Address();
+            int startingIndex = 0;
+
+            address.Id = reader.GetSafeInt32(startingIndex++);
+            address.UserId = reader.GetSafeInt32(startingIndex++);
+            address.Name = reader.GetSafeString(startingIndex++);
+            address.LineOne = reader.GetSafeString(startingIndex++);
+            address.LineTwo = reader.GetSafeString(startingIndex++);
+            address.City = reader.GetSafeString(startingIndex++);
+            address.Zip = reader.GetSafeString(startingIndex++);
+            address.StateId = reader.GetSafeInt32(startingIndex++);
+            address.CountryId = reader.GetSafeInt32(startingIndex++);
+            address.isBilling = reader.GetSafeBool(startingIndex++);
+            address.isProduct = reader.GetSafeBool(startingIndex++);
+            address.isMerchant = reader.GetSafeBool(startingIndex++);
+            address.DateCreated = reader.GetSafeDateTime(startingIndex++);
+            address.DateModified = reader.GetSafeDateTime(startingIndex++);
+            return address;
+        }
+    }
+}
