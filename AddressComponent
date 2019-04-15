@@ -1,0 +1,116 @@
+import React from "react";
+import * as addressSvc from "../../services/addressService";
+import AddressListHeader from "./AddressListHeader";
+import AddressMapper from "./AddressMapper";
+import SweetAlert from "react-bootstrap-sweetalert";
+import logger from "../../logger";
+
+const _logger = logger.extend("Address");
+
+class Address extends React.Component {
+  state = {
+    addressList: [],
+    addressComponents: [],
+    prevAddressInfo: [],
+    sweetAlert: ""
+  };
+
+  componentDidMount() {
+    addressSvc
+      .handleGetAll()
+      .then(this.onGetAllSuccess)
+      .catch(this.onGetAllError);
+  }
+  onGetAllSuccess = data => {
+    this.setFirstAddressList(data.items);
+    _logger("All addresses have been loaded.", data);
+  };
+  onGetAllError = error => {
+    _logger("There was an error receiving list of addresses.", error);
+  };
+
+  setFirstAddressList = items => {
+    const addressComponents = this.mapAddressList(items);
+    const addressList = items;
+    this.setState({
+      addressList,
+      addressComponents
+    });
+  };
+  mapAddressList = addresses => addresses.map(this.mapAddress);
+  mapAddress = address => {
+    return (
+      <AddressMapper
+        key={address.id}
+        addressItem={address}
+        deleteAddress={this.deleteAddress}
+        setUpdatedAddressList={this.setUpdatedAddressList}
+        prevAddressInfo={this.state.prevAddressInfo}
+      />
+    );
+  };
+
+  deleteAddress = addressId => {
+    addressSvc
+      .handleDelete(addressId)
+      .then(this.onDeleteSuccess)
+      .catch(this.onDeleteFail);
+  };
+  onDeleteSuccess = id => {
+    this.setState(prevState => {
+      const index = prevState.addressList.findIndex(
+        address => address.id === id
+      );
+      const newAddressArr1 = prevState.addressList.slice(0, index);
+      const newAddressArr2 = prevState.addressList.slice(index + 1);
+      const addressList = newAddressArr1.concat(newAddressArr2);
+      const addressComponents = this.mapAddressList(addressList);
+      const sweetAlert = true;
+      return { addressComponents, addressList, sweetAlert };
+    });
+    _logger("Address has been deleted.", id);
+  };
+  onDeleteFail = error => {
+    _logger("There was an unexpected error with your request.", error);
+  };
+
+  setUpdatedAddressList = data => {
+    this.setState(prevState => {
+      const index = prevState.addressList.findIndex(
+        address => address.id === data.id
+      );
+      const newAddressArr1a = prevState.addressList.slice(0, index);
+      const newAddressArr2 = prevState.addressList.slice(index + 1);
+      const newAddressArr1b = newAddressArr1a.concat(data);
+      const addressList = newAddressArr1b.concat(newAddressArr2);
+      const addressComponents = this.mapAddressList(addressList);
+      const prevAddressInfo = [];
+      return { addressList, addressComponents, prevAddressInfo };
+    });
+  };
+
+  render() {
+    return (
+      <div className="col-md-12">
+        <div>
+          {this.state.sweetAlert && (
+            <SweetAlert
+              type="success"
+              title="Address has been successfully deleted."
+              message="Address has been deleted."
+              onConfirm={() => this.setState({ sweetAlert: false })}
+            />
+          )}
+          <div className="card col-md-12">
+            <div className="card-body">
+              <AddressListHeader />
+              {this.state.addressComponents}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default Address;
