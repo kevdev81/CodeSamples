@@ -1,0 +1,186 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Project.Models.Domain;
+using Project.Models.Requests;
+using Project.Services;
+using Project.Web.Controllers;
+using Project.Web.Models.Responses;
+using System;
+using System.Collections.Generic;
+
+namespace Sabio.Web.Api.Controllers
+
+{
+    [Route("api/address")]
+    public class AddressApiController : BaseApiController
+    {
+        private readonly IAddressService _addressService;
+        private readonly IAuthenticationService<int> _authService;
+
+        public AddressApiController(IAuthenticationService<int> authService,
+            IAddressService addressService,
+            ILogger<AddressApiController> logger
+            ) : base(logger)
+        {
+            _addressService = addressService;
+            _authService = authService;
+        }
+
+        [HttpGet]
+        public ActionResult<ItemsResponse<Address>> Get()
+        {
+            ActionResult result = null;
+
+            try
+            {
+                List<Address> address = _addressService.Get();
+                if (address == null)
+                {
+                    result = NotFound404(new ErrorResponse("No addresses found."));
+                }
+                else
+                {
+                    ItemsResponse<Address> response = new ItemsResponse<Address>();
+                    response.Items = address;
+                    result = Ok200(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+
+            return result;
+        }
+
+        [HttpGet("{id:int}")]
+        public ActionResult<ItemResponse<Address>> Get(int id)
+        {
+            ItemResponse<Address> response = null;
+            ActionResult result = null;
+
+            try
+            {
+                Address address = _addressService.Get(id);
+
+                if (address == null)
+                {
+                    result = NotFound404(new ErrorResponse("Address at inputted Id not found."));
+                }
+                else
+                {
+                    response = new ItemResponse<Address>();
+                    response.Item = address;
+                    result = Ok200(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+            return result;
+        }
+
+        [HttpGet("userId")]
+        public ActionResult<ItemResponse<Address>> GetByUserId()
+        {
+            ItemResponse<Address> response = null;
+            ActionResult result = null;
+            int userId = _authService.GetCurrentUserId();
+
+            try
+            {
+                Address address = _addressService.GetByUserId(userId);
+
+                if (address == null)
+                {
+                    result = NotFound404(new ErrorResponse("Address at inputted Id not found."));
+                }
+                else
+                {
+                    response = new ItemResponse<Address>();
+                    response.Item = address;
+                    result = Ok200(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+            return result;
+        }
+
+        [HttpPost]
+        public ActionResult<ItemResponse<int>> Create(AddressInsertRequest req)
+        {
+            ItemResponse<int> response = null;
+            ActionResult result = null;
+            int userId = _authService.GetCurrentUserId();
+
+            try
+            {
+                int id = _addressService.Create(req, userId);
+                if (id > 0)
+                {
+                    response = new ItemResponse<int>();
+                    response.Item = id;
+                    result = Ok200(response);
+                }
+                else
+                {
+                    result = NotFound404(new ErrorResponse("Returned invalid response."));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+
+            return result;
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult<ItemResponse<SuccessResponse>> Update(AddressUpdateRequest req)
+        {
+            SuccessResponse response = new SuccessResponse();
+            ActionResult result = null;
+
+            try
+            {
+                _addressService.Update(req);
+                result = Ok200(response);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+
+            return result;
+        }
+
+        [HttpDelete("{id}")]
+        public ActionResult<SuccessResponse> Delete(int id)
+        {
+            SuccessResponse response = new SuccessResponse();
+            ActionResult result = null;
+
+            try
+            {
+                _addressService.Delete(id);
+                result = Ok200(response);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+
+            return result;
+        }
+    }
+}
