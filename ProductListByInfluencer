@@ -1,0 +1,180 @@
+import React from "react";
+import * as productsByRoleSvc from "../../../services/products/productPaginatedByRoleService";
+import ProductList from "./ProductList";
+import InfluencerProductColumns from "././productListColumns/InfluencerProductColumns";
+import { Badge } from "reactstrap";
+import PropTypes from "prop-types";
+import { withRouter } from "react-router-dom";
+import logger from "../../../logger";
+
+const _logger = logger.extend("ProductsByInfluencerList");
+
+class ProductsByInfluencerList extends React.Component {
+  state = {
+    pageIndex: 0,
+    pageSize: 1,
+    mappedProducts: [],
+    totalPages: 0,
+    prevPageButtonStatus: true,
+    nextPageButtonStatus: true
+  };
+
+  componentDidMount() {
+    this.loadCurrentPage();
+  }
+
+  loadCurrentPage = () => {
+    productsByRoleSvc
+      .handleGetProductsForInfluencer(this.state.pageIndex, this.state.pageSize)
+      .then(this.onGetAllSuccess)
+      .catch(this.onGetAllError);
+  };
+  onGetAllSuccess = data => {
+    this.mapInfluencerProducts(data);
+    this.setState({ totalPages: data.totalPages });
+    _logger(data);
+    _logger("Successfully retrieved product data.");
+  };
+  onGetAllError = error => {
+    _logger(error);
+    this.setState({ mappedProducts: null });
+    _logger("An error occured when retrieving product data.");
+  };
+
+  mapInfluencerProducts = products => {
+    const mappedProducts = products.pagedItems.map(this.mapProduct);
+    this.setState({ mappedProducts });
+  };
+
+  getDate = dateInfo => {
+    var date = new Date(dateInfo);
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    var dt = date.getDate();
+    if (dt < 10) {
+      dt = "0" + dt;
+    }
+    if (month < 10) {
+      month = "0" + month;
+    }
+    return month + "-" + dt + "-" + year;
+  };
+
+  mapProduct = product => {
+    return (
+      <div key={product.id} className="col-md-12 pull-left">
+        <span width="100%" className="col-sm-4">
+          {product.title}
+          <br />
+          <img
+            width="100%"
+            align="center"
+            src={product.mainImage}
+            alt="Product"
+            style={{ borderRadius: "20%" }}
+          />
+        </span>
+        <span width="100%" align="center" className="col-sm-4">
+          {product.name}
+        </span>
+        <span width="100%" className="col-sm-4" align="center">
+          <div align="center">
+            <Badge>{this.getDate(product.dateStart)}</Badge>
+            {product.dateEnd ? (
+              <Badge>{this.getDate(product.dateEnd)}</Badge>
+            ) : (
+              <Badge>{"Undetermined"}</Badge>
+            )}
+          </div>
+        </span>
+        <hr />
+      </div>
+    );
+  };
+
+  prevPage = () => {
+    this.toggleButton();
+    if (this.state.mappedProducts === null) {
+      this.toggleButton();
+      return null;
+    } else if (this.state.pageIndex !== 0) {
+      this.setState(prevState => {
+        const pageIndex = prevState.pageIndex - 1;
+        productsByRoleSvc
+          .handleGetProductsForInfluencer(
+            prevState.pageIndex - 1,
+            this.state.pageSize
+          )
+          .then(this.onGetAllSuccess)
+          .catch(this.onGetAllError)
+          .then(this.toggleButton);
+        return { pageIndex };
+      });
+    } else if (this.state.pageIndex === 0) {
+      this.toggleButton();
+    }
+  };
+
+  nextPage = () => {
+    this.toggleButton();
+    if (this.state.mappedProducts === null) {
+      this.toggleButton();
+      return null;
+    } else if (this.state.pageIndex + 1 !== this.state.totalPages) {
+      this.setState(prevState => {
+        const pageIndex = prevState.pageIndex + 1;
+        productsByRoleSvc
+          .handleGetProductsForInfluencer(
+            prevState.pageIndex + 1,
+            this.state.pageSize
+          )
+          .then(this.onGetAllSuccess)
+          .catch(this.onGetAllError)
+          .then(this.toggleButton);
+        return { pageIndex };
+      });
+    } else if (this.state.pageIndex + 1 === this.state.totalPages) {
+      this.toggleButton();
+    }
+  };
+
+  toggleButton = () => {
+    this.setState(prevState => {
+      const prevPageButtonStatus = !prevState.prevPageButtonStatus;
+      const nextPageButtonStatus = !prevState.nextPageButtonStatus;
+      return { prevPageButtonStatus, nextPageButtonStatus };
+    });
+  };
+  pushToProducts = () => {
+    this.props.history.push("/products");
+  };
+  render() {
+    return (
+      <div>
+        <ProductList
+          productListColumns={<InfluencerProductColumns />}
+          prevPage={this.prevPage}
+          nextPage={this.nextPage}
+          prevPageButtonStatus={this.state.prevPageButtonStatus}
+          nextPageButtonStatus={this.state.nextPageButtonStatus}
+          mappedProducts={
+            this.state.mappedProducts ? (
+              this.state.mappedProducts
+            ) : (
+              <div align="center">No Products to Show.</div>
+            )
+          }
+          pageIndex={this.state.pageIndex}
+          pageSize={this.state.pageSize}
+          pushToProducts={this.pushToProducts}
+        />
+      </div>
+    );
+  }
+}
+
+ProductsByInfluencerList.propTypes = {
+  history: PropTypes.object
+};
+
+export default withRouter(ProductsByInfluencerList);
