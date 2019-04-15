@@ -1,0 +1,211 @@
+import React from "react";
+import { Formik, Form, Field } from "formik";
+import * as addressSvc from "../../services/addressService";
+import TrueFalseSelect from "./TrueFalseSelect";
+import StateSelect from "./StateSelect";
+import CountrySelect from "./CountrySelect";
+import { initialAddressValues, addressSchema } from "./addressSchema";
+import { CardTitle } from "reactstrap";
+import PropTypes from "prop-types";
+
+export default class AddressForm extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      initialValues: initialAddressValues,
+      validationSchema: addressSchema
+    };
+  }
+
+  onAddressFormSubmit = (values, { setSubmitting }) => {
+    const addressData = {
+      ...values,
+      stateId: values.stateId.value,
+      countryId: values.countryId.value,
+      isBilling: values.isBilling.value,
+      isProduct: values.isProduct.value
+    };
+    addressSvc
+      .handleCreate(addressData)
+      .then(this.onCreateSuccess)
+      .catch(this.onCreateFail)
+      .then(() => setSubmitting(false));
+  };
+  onCreateSuccess = values => {
+    this.props.setNewAddressList(values);
+    console.log("Address has been created.", values);
+  };
+  onCreateFail = error => {
+    console.log("There was an error creating an address.", error);
+  };
+
+  render() {
+    return (
+      <Formik
+        validationSchema={this.state.validationSchema}
+        initialValues={this.state.initialValues}
+        onSubmit={this.onAddressFormSubmit}
+        render={({
+          values,
+          touched,
+          dirty,
+          errors,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          handleReset,
+          setFieldValue,
+          setFieldTouched,
+          isSubmitting
+        }) => (
+          <div>
+            <CardTitle style={{ fontSize: "250%" }}>Address Form</CardTitle>
+            <hr />
+
+            <Form>
+              <div className="form-group">
+                Name: *
+                <Field
+                  type="text"
+                  name="name"
+                  className="form-control"
+                  value={values.name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="Name"
+                />
+                {errors.name && touched.name && <div>{errors.name}</div>}
+              </div>
+              <div className="form-group">
+                Street Address: *
+                <Field
+                  type="text"
+                  name="lineOne"
+                  className="form-control"
+                  value={values.lineOne}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="Line 1"
+                />
+                {errors.lineOne && touched.lineOne && (
+                  <div>{errors.lineOne}</div>
+                )}
+                <Field
+                  type="text"
+                  name="lineTwo"
+                  className="form-control"
+                  value={values.lineTwo}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="Line 2"
+                />
+                {errors.lineTwo && touched.lineTwo && (
+                  <div>{errors.lineTwo}</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                City: *
+                <Field
+                  type="text"
+                  name="city"
+                  className="form-control"
+                  value={values.city}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="City"
+                />
+                {errors.city && touched.city && <div>{errors.city}</div>}
+              </div>
+
+              <div className="form-group">
+                ZipCode: *
+                <Field
+                  type="text"
+                  name="zip"
+                  className="form-control"
+                  value={values.zip}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="ZipCode"
+                />
+                {errors.zip && touched.zip && <div>{errors.zip}</div>}
+              </div>
+
+              <div className="form-group">
+                State:
+                <StateSelect
+                  name="stateId"
+                  value={values.stateId}
+                  onChange={setFieldValue}
+                  onBlur={setFieldTouched}
+                  error={errors.stateId}
+                  touched={touched.stateId}
+                />
+              </div>
+
+              <div className="form-group">
+                Country: *
+                <CountrySelect
+                  name="countryId"
+                  value={values.countryId}
+                  onChange={setFieldValue}
+                  onBlur={setFieldTouched}
+                  error={errors.countryId}
+                  touched={touched.countryId}
+                />
+              </div>
+
+              <div className="form-group">
+                Is this a Billing Address? *
+                <TrueFalseSelect
+                  name="isBilling"
+                  value={values.isBilling}
+                  onChange={setFieldValue}
+                  onBlur={setFieldTouched}
+                  error={errors.isBilling}
+                  touched={touched.isBilling}
+                />
+              </div>
+
+              <div className="form-group">
+                Is this an Address for a Product? *
+                <TrueFalseSelect
+                  name="isProduct"
+                  value={values.isProduct}
+                  onChange={setFieldValue}
+                  onBlur={setFieldTouched}
+                  error={errors.isProduct}
+                  touched={touched.isProduct}
+                />
+              </div>
+
+              <div className="form-group" align="center">
+                <button
+                  onClick={handleReset}
+                  className="btn btn-inverse waves-effect waves-light"
+                  type="button"
+                  disabled={!dirty || isSubmitting}
+                >
+                  Reset
+                </button>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <button
+                  onClick={handleSubmit}
+                  type="submit"
+                  className="btn btn-success waves-effect waves-light m-r-10"
+                  disabled={isSubmitting}
+                >
+                  Submit
+                </button>
+              </div>
+            </Form>
+          </div>
+        )}
+      />
+    );
+  }
+}
+AddressForm.propTypes = {
+  setNewAddressList: PropTypes.func
+};
