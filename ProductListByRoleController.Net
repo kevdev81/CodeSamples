@@ -1,0 +1,87 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Project.Models;
+using Project.Models.Domain;
+using Project.Services;
+using Project.Services.Interfaces;
+using Project.Web.Controllers;
+using Project.Web.Models.Responses;
+using System;
+using System.Collections.Generic;
+
+namespace Project.Web.Api.Controllers
+{
+    [Route("api/product")]
+    public class ProductByRoleApiController : BaseApiController
+    {
+        private readonly IProductByRoleService _productByRoleService;
+        private readonly IAuthenticationService<int> _authService;
+
+        public ProductByRoleApiController(IAuthenticationService<int> authService,
+            IProductByRoleService productByRoleService,
+            ILogger<ProductByRoleApiController> logger
+            ) : base(logger)
+        {
+            _productByRoleService = productByRoleService;
+            _authService = authService;
+        }
+
+        [HttpGet("merchant/{pageIndex:int}/{pageSize:int}")]
+        public ActionResult<ItemResponse<Paged<ProductListForMerchant>>> GetProductsForMerchant(int pageIndex, int pageSize)
+        {
+            
+            ActionResult result = null;
+
+            try
+            {
+                int currentUserId = _authService.GetCurrentUserId();
+                Paged<ProductListForMerchant> productListMerchant = _productByRoleService.GetProductsForMerchant(currentUserId, pageIndex, pageSize);
+                if (productListMerchant == null)
+                {
+                    result = NotFound404(new ErrorResponse("No products found for Merchant."));
+                }
+                else
+                {
+                    ItemResponse<Paged<ProductListForMerchant>> response = new ItemResponse<Paged<ProductListForMerchant>>();
+                    response.Item = productListMerchant;
+                    result = Ok200(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+            return result;
+        }
+
+        [HttpGet("influencer/{pageIndex:int}/{pageSize:int}")]
+        public ActionResult<ItemResponse<Paged<ProductListForInfluencer>>> GetProductsForInfluencer(int pageIndex, int pageSize)
+        {
+
+            ActionResult result = null;
+
+            try
+            {
+                int currentUserId = _authService.GetCurrentUserId();
+                Paged<ProductListForInfluencer> productByRoleInfluencer = _productByRoleService.GetProductsForInfluencer(currentUserId, pageIndex, pageSize);
+                if (productByRoleInfluencer == null)
+                {
+                    result = NotFound404(new ErrorResponse("No products found for Merchant."));
+                }
+                else
+                {
+                    ItemResponse<Paged<ProductListForInfluencer>> response = new ItemResponse<Paged<ProductListForInfluencer>>();
+                    response.Item = productByRoleInfluencer;
+                    result = Ok200(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.ToString());
+                result = StatusCode(500, new ErrorResponse(ex.Message.ToString()));
+            }
+            return result;
+        }
+    }
+}
